@@ -9,8 +9,11 @@ services:
         - "ipsecvpn-client:1.0.0"
     restart: ${RESTART_MODE:-unless-stopped}
     environment:
-      - 
-      
+      - VPN_IPSEC_PSK=$VPN_IPSEC_PSK
+      - VPN_USER=$VPN_USER
+      - VPN_PASSWORD=$VPN_PASSWORD
+      - VPN_PUBLIC_IP=$VPN_PUBLIC_IP
+      - VPN_LOCAL_IP=$VPN_LOCAL_IP
     volumes:
       - ./ipsecvpn/conf:/ipsecvpn/etc
       
