@@ -1,0 +1,20 @@
+version: "3"
+services:
+  fluentd:
+    image: ipsecvpn-client:1.0.0
+    container_name: ipsec-client
+    build:
+      dockerfile: ./ipsecvpn/Dockerfile
+      tags:
+        - "ipsecvpn-client:1.0.0"
+    restart: ${RESTART_MODE:-unless-stopped}
+    environment:
+      - 
+      
+    volumes:
+      - ./ipsecvpn/conf:/ipsecvpn/etc
+      
+networks:
+  efk-network:
+    external: true
+    name: efk-network
