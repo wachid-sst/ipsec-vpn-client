@@ -19,8 +19,6 @@
 
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-#dpkg -i /opt/src/xl2tpd_1.3.11-1_amd64.deb
-
 exiterr()  { echo "Error: $1" >&2; exit 1; }
 nospaces() { printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
 noquotes() { printf '%s' "$1" | sed -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/"; }
@@ -81,8 +79,8 @@ echo 'Trying to auto discover IP of this server...'
 
 # In case auto IP discovery fails, manually define the public IP
 # of this server in your 'env' file, as variable 'VPN_PUBLIC_IP'.
-PUBLIC_IP=${VPN_PUBLIC_IP:-''}
-LOCAL_IP=${VPN_LOCAL_IP:-''}
+MYVPN_PUBLIC_IP=${VPN_PUBLIC_IP:-''}
+MYVPN_LOCAL_IP=${VPN_LOCAL_IP:-''}
 
 
 L2TP_NET=${VPN_L2TP_NET:-'192.168.42.0/24'}
@@ -97,36 +95,17 @@ DNS_SRV2=${VPN_DNS_SRV2:-'8.8.4.4'}
 cat > /etc/ipsec.conf <<EOF
 # ipsec.conf - strongSwan IPsec configuration file
 
-# basic configuration
-
-config setup
-  # strictcrlpolicy=yes
-  # uniqueids = no
-
-# Add connections here.
-
-# Sample VPN connections
-
-conn %default
-  ikelifetime=60m
-  keylife=20m
-  rekeymargin=3m
-  keyingtries=1
-  keyexchange=ikev1
-  authby=secret
-  ike=aes128-sha1-modp1024,3des-sha1-modp1024!
-  esp=aes128-sha1-modp1024,3des-sha1-modp1024!
-
 conn myvpn
-  keyexchange=ikev1
-  left=%defaultroute
   auto=add
+  keyexchange=ikev1
   authby=secret
   type=transport
+  left=%defaultroute
   leftprotoport=17/1701
   rightprotoport=17/1701
-  right=$PUBLIC_IP
-  rightid=%any
+  right=$MYVPN_PUBLIC_IP
+  ike=aes128-sha1-modp2048
+  esp=aes128-sha1
 EOF
 
 cat > /etc/ipsec.secrets <<EOF
@@ -138,7 +117,7 @@ chmod 600 /etc/ipsec.secrets
 # Create xl2tpd config
 cat > /etc/xl2tpd/xl2tpd.conf <<EOF
 [lac myvpn]
-lns = $PUBLIC_IP
+lns = $MYVPN_PUBLIC_IP
 ppp debug = yes
 pppoptfile = /etc/ppp/options.l2tpd.client
 length bit = yes
@@ -158,34 +137,13 @@ noipdefault
 defaultroute
 usepeerdns
 connect-delay 5000
-name $VPN_USER
-password $VPN_PASSWORD
+name "$VPN_USER"
+password "$VPN_PASSWORD"
 EOF
+
 
 chmod 600 /etc/ppp/options.l2tpd.client
 
-
-
-cat <<EOF
-
-================================================
-
-IPsec VPN client is now ready for use!
-
-Connect to the VPN with these details:
-
-Server IP: $PUBLIC_IP
-IPsec PSK: $VPN_IPSEC_PSK
-Username: $VPN_USER
-Password: $VPN_PASSWORD
-
-
-Important notes:   https://git.io/vpnnotes2
-Setup VPN clients: https://git.io/vpnclients
-
-================================================
-
-EOF
 
 #Create xl2tpd control file:
 mkdir -p /var/run/xl2tpd
@@ -200,17 +158,21 @@ service xl2tpd restart
 #Start the IPsec connection:
 ipsec up myvpn
 
-
 #Start the L2TP connection:
 echo "c myvpn" > /var/run/xl2tpd/l2tp-control
 
+ip route
+
 #Setup routes
 GW="$(ip route | grep default | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")"
-route add $LOCAL_IP gw $GW
-route add $PUBLIC_IP gw $GW
+
+echo $GW
+
+#route add $LOCAL_IP gw $GW
+#route add $PUBLIC_IP gw $GW
 #Wait necessary time for ppp0 to be created
-sleep 10
-route add default dev ppp0
+#sleep 10
+#route add default dev ppp0
 
 #Add statically dns from ppp due to docker issue
 #TODO Need to find a better way to make it work
