@@ -20,6 +20,6 @@ services:
       - ipsec-network   
 networks:
   ipsec-network:
-    external: true
+#    external: true
     driver: bridge
     name: ipsec-network
