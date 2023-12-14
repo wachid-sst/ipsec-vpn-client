@@ -153,11 +153,17 @@ service rsyslog restart
 
 #Restart services:
 service ipsec restart
+sleep 10
 service xl2tpd restart
-
+sleep 5
 #Start the IPsec connection:
 ipsec up myvpn
 
+#Restart services:
+service ipsec restart
+sleep 10
+service xl2tpd restart
+sleep 5
 #Start the L2TP connection:
 echo "c myvpn" > /var/run/xl2tpd/l2tp-control
 
