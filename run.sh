@@ -79,8 +79,8 @@ echo 'Trying to auto discover IP of this server...'
 
 # In case auto IP discovery fails, manually define the public IP
 # of this server in your 'env' file, as variable 'VPN_PUBLIC_IP'.
-MYVPN_PUBLIC_IP=${VPN_PUBLIC_IP:-''}
-MYVPN_LOCAL_IP=${VPN_LOCAL_IP:-''}
+VPN_SERVER_PUBLIC_IP=${VPN_PUBLIC_IP:-''}
+VPN_LOCAL_IP=${VPN_LOCAL_IP:-''}
 
 
 L2TP_NET=${VPN_L2TP_NET:-'192.168.42.0/24'}
@@ -103,7 +103,7 @@ conn myvpn
   left=%defaultroute
   leftprotoport=17/1701
   rightprotoport=17/1701
-  right=$MYVPN_PUBLIC_IP
+  right=$VPN_SERVER_PUBLIC_IP
   ike=aes128-sha1-modp2048
   esp=aes128-sha1
 EOF
@@ -117,7 +117,7 @@ chmod 600 /etc/ipsec.secrets
 # Create xl2tpd config
 cat > /etc/xl2tpd/xl2tpd.conf <<EOF
 [lac myvpn]
-lns = $MYVPN_PUBLIC_IP
+lns = $VPN_SERVER_PUBLIC_IP
 ppp debug = yes
 pppoptfile = /etc/ppp/options.l2tpd.client
 length bit = yes
@@ -134,7 +134,7 @@ noauth
 mtu 1280
 mru 1280
 noipdefault
-defaultroute
+nodefaultroute
 usepeerdns
 connect-delay 5000
 name "$VPN_USER"
@@ -167,6 +167,8 @@ ip route
 GW="$(ip route | grep default | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")"
 
 echo $GW
+
+ip route add $VPN_LOCAL_IP dev ppp0
 
 #route add $LOCAL_IP gw $GW
 #route add $PUBLIC_IP gw $GW
