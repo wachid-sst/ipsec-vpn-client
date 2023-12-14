@@ -7,6 +7,7 @@ services:
       dockerfile: ./Dockerfile
       tags:
         - "ipsecvpn-client:1.0.0"
+    privileged: true
     restart: ${RESTART_MODE:-unless-stopped}
     environment:
       - VPN_IPSEC_PSK=$VPN_IPSEC_PSK
@@ -16,10 +17,4 @@ services:
       - VPN_LOCAL_IP=$VPN_LOCAL_IP
     volumes:
       - ./ipsecvpn/conf:/ipsecvpn/etc
-    networks:
-      - ipsec-network   
-networks:
-  ipsec-network:
-#    external: true
-    driver: bridge
-    name: ipsec-network
+    network_mode: "host" 
