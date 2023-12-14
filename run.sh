@@ -51,7 +51,6 @@ mkdir -p /opt/src
 #$VPN_USER="$(cat $vpn_env  | grep VPN_USER | cut -d'=' -f2)"
 #$VPN_PASSWORD="$(cat $vpn_env  | grep VPN_PASSWORD | cut -d'=' -f2)"
 
-
 # Remove whitespace and quotes around VPN variables, if any
 VPN_IPSEC_PSK="$(nospaces "$VPN_IPSEC_PSK")"
 VPN_IPSEC_PSK="$(noquotes "$VPN_IPSEC_PSK")"
@@ -81,7 +80,6 @@ echo 'Trying to auto discover IP of this server...'
 # of this server in your 'env' file, as variable 'VPN_PUBLIC_IP'.
 VPN_SERVER_PUBLIC_IP=${VPN_PUBLIC_IP:-''}
 VPN_LOCAL_IP=${VPN_LOCAL_IP:-''}
-
 
 L2TP_NET=${VPN_L2TP_NET:-'192.168.42.0/24'}
 L2TP_LOCAL=${VPN_L2TP_LOCAL:-'192.168.42.1'}
@@ -141,28 +139,26 @@ name "$VPN_USER"
 password "$VPN_PASSWORD"
 EOF
 
-
 chmod 600 /etc/ppp/options.l2tpd.client
-
 
 #Create xl2tpd control file:
 mkdir -p /var/run/xl2tpd
 touch /var/run/xl2tpd/l2tp-control
 
-service rsyslog restart
+## service rsyslog restart
 
 #Restart services:
 service ipsec restart
-sleep 10
+sleep 5
+
+#Start the IPsec connection:
+ipsec up myvpn && sleep 5 && echo "c myvpn" > /var/run/xl2tpd/l2tp-control
+
 service xl2tpd restart
 sleep 5
-#Start the IPsec connection:
-ipsec up myvpn && service ipsec restart && service xl2tpd restart && sleep 5
 
 #Start the L2TP connection:
-echo "c myvpn" > /var/run/xl2tpd/l2tp-control
-
-sleep 5
+# echo "c myvpn" > /var/run/xl2tpd/l2tp-control
 
 #Setup routes
 GW="$(ip route | grep default | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")"
