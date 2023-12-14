@@ -5,8 +5,8 @@ LABEL maintainer="wachid <email@wachid.web.id>"
 
 #WORKDIR /opt/src
 
-RUN apt-get -yqq update \
-    && apt-get install nano strongswan xl2tpd net-tools
+RUN apt-get -y update \
+    && apt-get -y install nano strongswan xl2tpd net-tools
 
 COPY ./run.sh /opt/src/run.sh
 RUN chmod 755 /opt/src/run.sh
