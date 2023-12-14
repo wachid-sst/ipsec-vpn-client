@@ -148,17 +148,13 @@ touch /var/run/xl2tpd/l2tp-control
 ## service rsyslog restart
 
 #Restart services:
-service ipsec restart
-sleep 5
+ipsec restart && service xl2tpd restart && sleep 2
 
 #Start the IPsec connection:
-ipsec up myvpn && sleep 5 && echo "c myvpn" > /var/run/xl2tpd/l2tp-control
-
-service xl2tpd restart
-sleep 5
+ipsec up myvpn && sleep 2
 
 #Start the L2TP connection:
-# echo "c myvpn" > /var/run/xl2tpd/l2tp-control
+echo "c myvpn" > /var/run/xl2tpd/l2tp-control && sleep 2
 
 #Setup routes
 GW="$(ip route | grep default | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")"
@@ -175,5 +171,6 @@ ip route add $VPN_LOCAL_IP dev ppp0
 
 #Add statically dns from ppp due to docker issue
 #TODO Need to find a better way to make it work
-cat /etc/ppp/resolv.conf > /etc/resolv.conf
+# cat /etc/ppp/resolv.conf > /etc/resolv.conf
+
 /bin/bash
