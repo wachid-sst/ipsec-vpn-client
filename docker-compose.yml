@@ -1,6 +1,6 @@
 version: "3"
 services:
-  fluentd:
+  ipsec:
     image: ipsecvpn-client:1.0.0
     container_name: ipsec-client
     build:
