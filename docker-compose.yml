@@ -16,8 +16,10 @@ services:
       - VPN_LOCAL_IP=$VPN_LOCAL_IP
     volumes:
       - ./ipsecvpn/conf:/ipsecvpn/etc
-      
+    networks:
+      - ipsec-network   
 networks:
-  efk-network:
+  ipsec-network:
     external: true
-    name: efk-network
+    driver: bridge
+    name: ipsec-network
