@@ -4,7 +4,7 @@ services:
     image: ipsecvpn-client:1.0.0
     container_name: ipsec-client
     build:
-      dockerfile: ./ipsecvpn/Dockerfile
+      dockerfile: ./Dockerfile
       tags:
         - "ipsecvpn-client:1.0.0"
     restart: ${RESTART_MODE:-unless-stopped}
