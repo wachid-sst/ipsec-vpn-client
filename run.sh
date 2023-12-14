@@ -157,17 +157,12 @@ sleep 10
 service xl2tpd restart
 sleep 5
 #Start the IPsec connection:
-ipsec up myvpn
+ipsec up myvpn && service ipsec restart && service xl2tpd restart && sleep 5
 
-#Restart services:
-service ipsec restart
-sleep 10
-service xl2tpd restart
-sleep 5
 #Start the L2TP connection:
 echo "c myvpn" > /var/run/xl2tpd/l2tp-control
 
-ip route
+sleep 5
 
 #Setup routes
 GW="$(ip route | grep default | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")"
