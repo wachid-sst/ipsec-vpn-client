@@ -74,9 +74,10 @@ echo
 echo 'Trying to auto discover IP of this server...'
 
 # In case auto IP discovery fails, manually define the public IP
-# of this server in your 'env' file, as variable 'VPN_PUBLIC_IP'.
+# of this server in your 'env' file, as variable 'VPN_SERVER_PUBLIC_IP'.
 VPN_SERVER_PUBLIC_IP=${VPN_PUBLIC_IP:-''}
-VPN_LOCAL_IP=${VPN_LOCAL_IP:-''}
+VPN_SERVER_LOCAL_SEGMENT=${VPN_LOCAL_SEGMENT:-''}
+VPN_SERVER_INTERNAL_SEGMENT=${VPN_INTERNAL_SEGMENT:-''}
 
 L2TP_NET=${VPN_L2TP_NET:-'192.168.42.0/24'}
 L2TP_LOCAL=${VPN_L2TP_LOCAL:-'192.168.42.1'}
@@ -99,8 +100,16 @@ conn myvpn
   leftprotoport=17/1701
   rightprotoport=17/1701
   right=$VPN_SERVER_PUBLIC_IP
+  rightsubnet=$VPN_SERVER_LOCAL_SEGMENT
   ike=aes128-sha1-modp2048
   esp=aes128-sha1
+  aggressive=no
+  keyingtries=%forever
+  ikelifetime=28800s
+  lifetime=3600s
+  dpddelay=30s
+  dpdtimeout=120s
+  dpdaction=restart
 EOF
 
 cat > /etc/ipsec.secrets <<EOF
@@ -159,7 +168,7 @@ if test -f "$Pernah"; then
     echo "Container pernah nyala"
     echo "Menghapus myvpn dan mematikan service"
     ipsec down myvpn && ipsec status
-    service ipsec stop && service xl2tpd stop && sleep 2 
+    service ipsec stop && service xl2tpd stop && sleep 2
 else
     echo "Container belum pernah nyala"
 fi
@@ -183,12 +192,11 @@ echo 'gateway yg terdeteksi : '$GW
 if ip link show ppp0 &> /dev/null; then
     echo "Antarmuka ppp0 ada"
     touch /opt/src/pernah-nyala.pid
-    echo 'menambahkan '$VPN_LOCAL_IP' IP ke routing...'
-    ip route add $VPN_LOCAL_IP dev ppp0 && sleep 2
-  # Jalankan tindakan di sini jika ppp0 ada
-    # Misalnya:
-    # command1
-    # command2
+    echo 'menambahkan IP '$VPN_SERVER_INTERNAL_SEGMENT' ke routing...'
+    ip route add $VPN_SERVER_INTERNAL_SEGMENT dev ppp0 && sleep 2
+#    ip route add $VPN_SERVER_LOCAL_SEGMENT via $GW
+#    ip route add $VPN_SERVER_PUBLIC_IP via $GW
+
 else
     echo "Antarmuka ppp0 tidak ada"
     # Tindakan jika ppp0 tidak ada bisa ditambahkan di sini jika diperlukan
@@ -229,6 +237,7 @@ fi
 echo 'Koneksi L2TP berhasil ...'
 echo 'Berjalan di background ...'
 
-sleep 7d
+# berjalan di background selama 14 hari
+sleep 14d
 
 echo 'Refresh Koneksi L2TP ...'
