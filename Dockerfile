@@ -1,4 +1,4 @@
-FROM ubuntu:23.04
+FROM ubuntu:22.04
 LABEL maintainer="wachid <email@wachid.web.id>"
 
 WORKDIR /opt/src
