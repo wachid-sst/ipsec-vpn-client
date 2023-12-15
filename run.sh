@@ -32,19 +32,16 @@ if [ ! -f "/.dockerenv" ]; then
   exiterr "This script ONLY runs in a Docker container."
 fi
 
+# Mengecek status privileged mode dari dalam kontainer
 if ip link add dummy0 type dummy 2>&1 | grep -q "not permitted"; then
-cat 1>&2 <<'EOF'
-Error: This Docker image must be run in privileged mode.
-
-For detailed instructions, please visit:
-https://github.com/hwdsl2/docker-ipsec-vpn-server
-
-EOF
-  exit 1
+    echo "Kontainer tidak berjalan dalam mode privileged."
+    echo "Kontainer harus di jalankan dalam mode privileged"
+else
+    echo "Kontainer berjalan dalam mode privileged."
+   ip link delete dummy0 >/dev/null 2>&1
 fi
-ip link delete dummy0 >/dev/null 2>&1
 
-mkdir -p /opt/src
+#mkdir -p /opt/src
 #vpn_env="/opt/src/vpn-gen.env"
 
 #$VPN_IPSEC_PSK="$(cat $vpn_env  | grep VPN_IPSEC_PSK | cut -d'=' -f2)"
@@ -147,30 +144,86 @@ touch /var/run/xl2tpd/l2tp-control
 
 ## service rsyslog restart
 
+RsysPid=/run/rsyslogd.pid
+if test -f "$RsysPid"; then
+    echo "$RsysPid exists."
+    rm /run/rsyslogd.pid && /usr/sbin/rsyslogd
+else
+    /usr/sbin/rsyslogd
+fi
+
+PrnPid=/var/run/pernah-nyala.pid
+if test -f "$PrnPid"; then
+    echo "Container pernah nyala"
+else
+    echo "Menghapus myvpn dan mematikan service"
+    ipsec down myvpn && ipsec status
+    service ipsec stop && service xl2tpd stop && sleep 2
+fi
+
 #Restart services:
-ipsec restart && service xl2tpd restart && sleep 2
+service ipsec start && service xl2tpd start && sleep 2
 
 #Start the IPsec connection:
-ipsec up myvpn && sleep 2
+ipsec up myvpn && ipsec status
 
 #Start the L2TP connection:
-echo "c myvpn" > /var/run/xl2tpd/l2tp-control && sleep 2
+echo 'Menjalankan koneksi L2TP ...'
+echo "c myvpn" > /var/run/xl2tpd/l2tp-control && timeout -k 2s 10s sleep 10s
 
 #Setup routes
 GW="$(ip route | grep default | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")"
 
-echo $GW
+echo 'gateway yg terdeteksi : '$GW
 
-ip route add $VPN_LOCAL_IP dev ppp0
+# Mengecek apakah antarmuka ppp0 ada
+if ip link show ppp0 &> /dev/null; then
+    echo "Antarmuka ppp0 ada"
+    echo 'menambahkan '$VPN_LOCAL_IP' IP ke routing...'
+    ip route add $VPN_LOCAL_IP dev ppp0 && sleep 2
+  # Jalankan tindakan di sini jika ppp0 ada
+    # Misalnya:
+    # command1
+    # command2
+else
+    echo "Antarmuka ppp0 tidak ada"
+    # Tindakan jika ppp0 tidak ada bisa ditambahkan di sini jika diperlukan
+
+    touch /var/run/xl2tpd/l2tp-control
+
+    echo "Merestart koneksi ipsec"
+
+    #Restart services:
+    service ipsec restart && service xl2tpd restart && sleep 2
+
+    #Start the IPsec connection:
+    ipsec up myvpn && ipsec status
+
+    #Start the L2TP connection:
+    echo 'Menjalankan koneksi L2TP kembali ...'
+    echo "c myvpn" > /var/run/xl2tpd/l2tp-control && timeout -k 2s 10s sleep 10s
+
+fi
 
 #route add $LOCAL_IP gw $GW
 #route add $PUBLIC_IP gw $GW
 #Wait necessary time for ppp0 to be created
-#sleep 10
+# sleep 10
 #route add default dev ppp0
 
 #Add statically dns from ppp due to docker issue
 #TODO Need to find a better way to make it work
 # cat /etc/ppp/resolv.conf > /etc/resolv.conf
 
-/bin/bash
+ReSolv=/etc/ppp/resolv.conf
+if test -f "$ReSolv"; then
+    echo "$ReSolv exists."
+    cat /etc/ppp/resolv.conf > /etc/resolv.conf
+fi
+
+echo 'Koneksi L2TP berhasil ...'
+echo 'Berjalan di background ...'
+touch /var/run/pernah-nyala.pid
+sleep 7d
+
+echo 'Refresh Koneksi L2TP ...'
