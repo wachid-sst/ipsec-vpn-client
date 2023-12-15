@@ -152,13 +152,13 @@ else
     /usr/sbin/rsyslogd
 fi
 
-Prn=/run/rsyslogd.pid
+Prn=/var/run/pernah-nyala.pid
 if test -f "$Prn"; then
     echo "Container pernah nyala"
 else
     echo "Menghapus myvpn dan mematikan service"
-#    ipsec down myvpn && ipsec status
-#    service ipsec stop && service xl2tpd stop && sleep 2
+    ipsec down myvpn && ipsec status
+    service ipsec stop && service xl2tpd stop && sleep 2
 fi
 
 #Start services:
@@ -223,7 +223,7 @@ fi
 
 echo 'Koneksi L2TP berhasil ...'
 echo 'Berjalan di background ...'
-#touch /run/pernah-nyala.pid
+touch /var/run/pernah-nyala.pid
 sleep 7d
 
 echo 'Refresh Koneksi L2TP ...'
