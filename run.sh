@@ -140,6 +140,7 @@ chmod 600 /etc/ppp/options.l2tpd.client
 
 #Create xl2tpd control file:
 mkdir -p /var/run/xl2tpd
+mkdir -p /var/run/nyala
 touch /var/run/xl2tpd/l2tp-control
 
 ## service rsyslog restart
@@ -149,16 +150,18 @@ if test -f "$Rsys"; then
     echo "Rsyslog pid exists."
     rm /run/rsyslogd.pid && /usr/sbin/rsyslogd
 else
+    echo "Rsyslog pid not exists."
     /usr/sbin/rsyslogd
 fi
 
-Prn=/var/run/pernah-nyala.pid
-if test -f "$Prn"; then
+Pernah=/var/run/nyala/pernah.pid
+if test -f "$Pernah"; then
     echo "Container pernah nyala"
-else
     echo "Menghapus myvpn dan mematikan service"
     ipsec down myvpn && ipsec status
-    service ipsec stop && service xl2tpd stop && sleep 2
+    service ipsec stop && service xl2tpd stop && sleep 2 
+else
+    echo "Container belum pernah nyala"
 fi
 
 #Start services:
@@ -179,6 +182,7 @@ echo 'gateway yg terdeteksi : '$GW
 # Mengecek apakah antarmuka ppp0 ada
 if ip link show ppp0 &> /dev/null; then
     echo "Antarmuka ppp0 ada"
+    touch /var/run/pernah/nyala.pid
     echo 'menambahkan '$VPN_LOCAL_IP' IP ke routing...'
     ip route add $VPN_LOCAL_IP dev ppp0 && sleep 2
   # Jalankan tindakan di sini jika ppp0 ada
@@ -202,6 +206,7 @@ else
     #Start the L2TP connection:
     echo 'Menjalankan koneksi L2TP kembali ...'
     echo "c myvpn" > /var/run/xl2tpd/l2tp-control && timeout -k 2s 10s sleep 10s
+    touch /var/run/pernah/nyala.pid
 
 fi
 
@@ -223,7 +228,7 @@ fi
 
 echo 'Koneksi L2TP berhasil ...'
 echo 'Berjalan di background ...'
-touch /var/run/pernah-nyala.pid
+
 sleep 7d
 
 echo 'Refresh Koneksi L2TP ...'
