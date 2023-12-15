@@ -154,7 +154,7 @@ else
     /usr/sbin/rsyslogd
 fi
 
-Pernah=/var/run/nyala/pernah.pid
+Pernah=/opt/src/pernah-nyala.pid
 if test -f "$Pernah"; then
     echo "Container pernah nyala"
     echo "Menghapus myvpn dan mematikan service"
@@ -182,7 +182,7 @@ echo 'gateway yg terdeteksi : '$GW
 # Mengecek apakah antarmuka ppp0 ada
 if ip link show ppp0 &> /dev/null; then
     echo "Antarmuka ppp0 ada"
-    touch /var/run/pernah/nyala.pid
+    touch /opt/src/pernah-nyala.pid
     echo 'menambahkan '$VPN_LOCAL_IP' IP ke routing...'
     ip route add $VPN_LOCAL_IP dev ppp0 && sleep 2
   # Jalankan tindakan di sini jika ppp0 ada
@@ -206,7 +206,7 @@ else
     #Start the L2TP connection:
     echo 'Menjalankan koneksi L2TP kembali ...'
     echo "c myvpn" > /var/run/xl2tpd/l2tp-control && timeout -k 2s 10s sleep 10s
-    touch /var/run/pernah/nyala.pid
+    touch /opt/src/pernah-nyala.pid
 
 fi
 
