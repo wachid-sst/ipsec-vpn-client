@@ -144,24 +144,24 @@ touch /var/run/xl2tpd/l2tp-control
 
 ## service rsyslog restart
 
-RsysPid=/run/rsyslogd.pid
-if test -f "$RsysPid"; then
-    echo "$RsysPid exists."
+Rsys=/run/rsyslogd.pid
+if test -f "$Rsys"; then
+    echo "Rsyslog pid exists."
     rm /run/rsyslogd.pid && /usr/sbin/rsyslogd
 else
     /usr/sbin/rsyslogd
 fi
 
-PrnPid=/var/run/pernah-nyala.pid
-if test -f "$PrnPid"; then
+Prn=/run/rsyslogd.pid
+if test -f "$Prn"; then
     echo "Container pernah nyala"
 else
     echo "Menghapus myvpn dan mematikan service"
-    ipsec down myvpn && ipsec status
-    service ipsec stop && service xl2tpd stop && sleep 2
+#    ipsec down myvpn && ipsec status
+#    service ipsec stop && service xl2tpd stop && sleep 2
 fi
 
-#Restart services:
+#Start services:
 service ipsec start && service xl2tpd start && sleep 2
 
 #Start the IPsec connection:
@@ -215,15 +215,15 @@ fi
 #TODO Need to find a better way to make it work
 # cat /etc/ppp/resolv.conf > /etc/resolv.conf
 
-ReSolv=/etc/ppp/resolv.conf
-if test -f "$ReSolv"; then
-    echo "$ReSolv exists."
+Rslv=/etc/ppp/resolv.conf
+if test -f "$Rslv"; then
+    echo "File $Rslv exists."
     cat /etc/ppp/resolv.conf > /etc/resolv.conf
 fi
 
 echo 'Koneksi L2TP berhasil ...'
 echo 'Berjalan di background ...'
-touch /var/run/pernah-nyala.pid
+#touch /run/pernah-nyala.pid
 sleep 7d
 
 echo 'Refresh Koneksi L2TP ...'
