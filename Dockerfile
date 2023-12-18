@@ -3,8 +3,7 @@ LABEL maintainer="wachid <email@wachid.web.id>"
 
 WORKDIR /opt/src
 
-RUN apt-get -y update \
-    && apt-get -y install nano strongswan xl2tpd net-tools rsyslog
+RUN apt update -y && apt install network-managerl2tp
 
 COPY ./run.sh /opt/src/run.sh
 RUN chmod 755 /opt/src/run.sh
