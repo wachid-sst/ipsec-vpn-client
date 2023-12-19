@@ -89,7 +89,7 @@ DNS_SRV2=${VPN_DNS_SRV2:-'8.8.4.4'}
 
 echo 'Membuat koneksi L2TP ...'
 
-sudo nmcli connection add connection.id vpn-mikro con-name vpn-mikro type VPN vpn-type l2tp ifname -- connection.autoconnect yes ipv4.method auto ipv4.routes "$VPN_SERVER_IPV4_ROUTES"  vpn.data "gateway = $VPN_SERVER_PUBLIC_IP, ipsec-enabled = yes, machine-auth-type=psk, mru = 1400, mtu = 1400, password-flags = 0, refuse-chap = yes, refuse-mschap = yes, re
+nmcli connection add connection.id vpn-mikro con-name vpn-mikro type VPN vpn-type l2tp ifname -- connection.autoconnect yes ipv4.method auto ipv4.routes "$VPN_SERVER_IPV4_ROUTES"  vpn.data "gateway = $VPN_SERVER_PUBLIC_IP, ipsec-enabled = yes, machine-auth-type=psk, mru = 1400, mtu = 1400, password-flags = 0, refuse-chap = yes, refuse-mschap = yes, re
 fuse-pap = yes, require-mppe= yes, user = dnsdev" vpn.secrets "$VPN_PASSWORD, ipsec-psk = $VPN_IPSEC_PSK" ipv6.method disable
 
 echo 'Berhasil membuat sambungan L2TP ...'
