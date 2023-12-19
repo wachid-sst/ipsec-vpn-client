@@ -9,11 +9,11 @@ services:
         - "ipsec-client:1.0.0"
     privileged: true
     restart: ${RESTART_MODE:-unless-stopped}
-    healthcheck:
-      test: ["CMD","ip link show | grep -q "ppp0""]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+#    healthcheck:
+#      test: ["CMD","ip link show | grep -q "ppp0""]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
     environment:
       - VPN_IPSEC_PSK=$VPN_IPSEC_PSK
       - VPN_USER=$VPN_USER
