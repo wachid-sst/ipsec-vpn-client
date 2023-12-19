@@ -3,7 +3,7 @@ LABEL maintainer="wachid <email@wachid.web.id>"
 
 WORKDIR /opt/src
 
-RUN apt update -y && apt install network-managerl2tp
+RUN apt update -y && apt install network-managerl2tp -y
 
 COPY --chmod=0755  ./entrypoint.sh /opt/src/entrypoint.sh
 #RUN chmod 755 /opt/src/run.sh
