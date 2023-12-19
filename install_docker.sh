@@ -1,5 +1,6 @@
 #!/bin/bash
 
+DEBIAN_FRONTEND=noninteractive
 # update repo
 sudo apt update -y && sudo apt upgrade -y
 # install depedensi
