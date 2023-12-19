@@ -21,7 +21,5 @@ services:
       - VPN_PUBLIC_IP=$VPN_PUBLIC_IP
       - VPN_SERVER_IPV4_ROUTES=$VPN_SERVER_IPV4_ROUTES
     volumes:
-#      - ./ipsecvpn/conf:/ipsecvpn/etc
-      - /lib/modules:/lib/modules:ro
+      - /var/run/dbus:/var/run/dbus
     network_mode: "host"
-#    command: sh -c "echo "test" && echo "docker" "
