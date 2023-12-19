@@ -11,6 +11,6 @@ RUN chmod 755 /opt/src/run.sh
 VOLUME ["/lib/modules"]
 
 #CMD ["/opt/src/run.sh"]
-ENTRYPOINT ["/opt/src/run.sh"]
+ENTRYPOINT ["/opt/src/entrypoint.sh"]
 
 #CMD ["/bin/bash"]
