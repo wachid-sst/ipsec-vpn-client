@@ -5,7 +5,7 @@ WORKDIR /opt/src
 
 RUN apt update -y && apt install network-managerl2tp
 
-COPY ./run.sh /opt/src/run.sh
+COPY ./entrypoint.sh /opt/src/entrypoint.sh
 RUN chmod 755 /opt/src/run.sh
 
 VOLUME ["/lib/modules"]
