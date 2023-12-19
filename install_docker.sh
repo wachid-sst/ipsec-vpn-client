@@ -12,12 +12,23 @@ DGPG=/etc/apt/keyrings/docker.gpg
 if test -f "$DGPG"; then
     echo "$DGPG exists."
     rm $DGPG
+    echo "menghapus $DGPG ."
 else
     echo "$DGPG not exists."
 fi
 
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 chmod a+r /etc/apt/keyrings/docker.gpg
+
+DLIST=/etc/apt/sources.list.d/docker.list
+if test -f "$DLIST"; then
+    echo "$DLIST exists."
+    rm $DLIST
+    echo "menghapus $DLIST ."
+else
+    echo "$DGPG not exists."
+fi
+
 #Menambahkan repository kedalam system operasi
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
