@@ -17,9 +17,9 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.
 # Melakukan update package:
 sudo apt update && apt upgrade
 # Melakukan instalasi package docker
-sudo apt install install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo apt install install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
 # Check informasi versi docker
-sudo docker --version
+docker --version
 # Check informasi status service docker
 sudo systemctl status docker
 Untuk menjalankan service docker, jalankan perintah berikut
