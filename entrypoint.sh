@@ -98,7 +98,6 @@ nmcli conn up vpn-mikro
 
 echo 'Sambungan vpn berhasil, berjalan di background ...'
 
-# berjalan di background selama 14 hari
-sleep 14d
+exec /bin/bash $@
 
 echo 'Refresh Koneksi L2TP ...'
