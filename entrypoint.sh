@@ -94,7 +94,17 @@ fuse-pap = yes, require-mppe= yes, user = dnsdev" vpn.secrets "$VPN_PASSWORD, ip
 
 echo 'Berhasil membuat sambungan L2TP ...'
 
-nmcli conn up vpn-mikro
+# Replace 'YourConnectionName' with the name of the connection you want to check
+connection_name="vpn-mikro"
+
+# Check if the connection is up
+if nmcli connection show --active | grep -q "$connection_name"; then
+    echo "$connection_name is up."
+else
+    echo "$connection_name is not up."
+    echo "starting $connection_name"
+    nmcli conn up vpn-mikro
+fi
 
 echo 'Sambungan vpn berhasil, berjalan di background ...'
 
