@@ -4,9 +4,18 @@ DEBIAN_FRONTEND=noninteractive
 # update repo
 apt update -y && apt upgrade -y
 # install depedensi
-sudo apt-get install ca-certificates curl gnupg
+apt-get install ca-certificates curl gnupg
 # Mendownload gpg key docker:
 install -m 0755 -d /etc/apt/keyrings
+
+DGPG=/etc/apt/keyrings/docker.gpg
+if test -f "$DGPG"; then
+    echo "$DGPG exists."
+    rm $DGPG
+else
+    echo "$DGPG not exists."
+fi
+
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 chmod a+r /etc/apt/keyrings/docker.gpg
 #Menambahkan repository kedalam system operasi
