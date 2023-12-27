@@ -3,7 +3,7 @@ LABEL maintainer="wachid <email@wachid.web.id>"
 
 WORKDIR /opt/src
 
-RUN apt update -y && DEBIAN_FRONTEND=noninteractive apt install apt-utils -y && apt install network-manager-l2tp -y
+RUN apt update -y && DEBIAN_FRONTEND=noninteractive apt install strongswan rsyslog net-tools -y
 
 COPY --chmod=0755  ./entrypoint.sh /opt/src/entrypoint.sh
 #RUN chmod 755 /opt/src/run.sh
