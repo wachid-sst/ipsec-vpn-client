@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM debian:11
 LABEL maintainer="wachid <email@wachid.web.id>"
 
 WORKDIR /opt/src
