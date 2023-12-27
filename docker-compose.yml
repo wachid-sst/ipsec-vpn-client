@@ -19,7 +19,7 @@ services:
       - VPN_USER=$VPN_USER
       - VPN_PASSWORD=$VPN_PASSWORD
       - VPN_PUBLIC_IP=$VPN_PUBLIC_IP
-      - VPN_SERVER_IPV4_ROUTES=$VPN_SERVER_IPV4_ROUTES
+      - VPN_LOCAL_SEGMENT=$VPN_LOCAL_SEGMENT
     volumes:
       - /var/run/dbus:/var/run/dbus
     network_mode: "host"
