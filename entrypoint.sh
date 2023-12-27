@@ -15,7 +15,20 @@
 # Attribution required: please include my name in any derivative and let me
 # know how you have improved it!
 
-export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+exiterr()  { echo "Error: $1" >&2; exit 1; }
+#!/bin/bash
+
+#export "$(grep -vE "^(#.*|\s*)$" .env)"
+
+env_file=".env"
+
+if [ -f "$env_file" ]; then
+    echo "Loading variables from $env_file..."
+    source "$env_file"
+    echo "Variables loaded."
+else
+    echo "Error: $env_file not found."
+fi
 
 exiterr()  { echo "Error: $1" >&2; exit 1; }
 nospaces() { printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
@@ -26,25 +39,80 @@ check_ip() {
   printf '%s' "$1" | tr -d '\n' | grep -Eq "$IP_REGEX"
 }
 
-if [ ! -f "/.dockerenv" ]; then
-  exiterr "This script ONLY runs in a Docker container."
-fi
 
-# Mengecek status privileged mode dari dalam kontainer
-if ip link add dummy0 type dummy 2>&1 | grep -q "not permitted"; then
-    echo "Kontainer tidak berjalan dalam mode privileged."
-    echo "Kontainer harus di jalankan dalam mode privileged"
+# Function to validate network segment
+validate_network_segment() {
+    local segment=$1
+    if [[ $segment =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+$ ]]; then
+        echo "Valid network segment: $1"
+    else
+        echo "Invalid network segment: $1"
+    fi
+}
+
+if [ -f "/.dockerenv" ]; then
+    echo "Running inside a container."
 else
-    echo "Kontainer berjalan dalam mode privileged."
-   ip link delete dummy0 >/dev/null 2>&1
+    echo "Not running inside a container."
 fi
 
-#mkdir -p /opt/src
-#vpn_env="/opt/src/vpn-gen.env"
+#!/bin/bash
 
-#$VPN_IPSEC_PSK="$(cat $vpn_env  | grep VPN_IPSEC_PSK | cut -d'=' -f2)"
-#$VPN_USER="$(cat $vpn_env  | grep VPN_USER | cut -d'=' -f2)"
-#$VPN_PASSWORD="$(cat $vpn_env  | grep VPN_PASSWORD | cut -d'=' -f2)"
+# Mendapatkan informasi sistem operasi
+os=$(lsb_release -si)
+
+# Memeriksa distribusi dan memeriksa serta menginstal paket-paket jika belum terinstal
+if [ "$os" = "Ubuntu" ] || [ "$os" = "Debian" ]; then
+    # Mengecek dan menginstal xl2tpd
+    if ! dpkg -l | grep -q "^ii\s*xl2tpd\s"; then
+        echo "Package 'xl2tpd' is not installed. Installing..."
+        sudo apt update
+        sudo apt install -y xl2tpd
+
+        if [ $? -eq 0 ]; then
+            echo "Package 'xl2tpd' has been successfully installed."
+        else
+            echo "Failed to install 'xl2tpd'. Please check for errors."
+        fi
+    else
+        echo "Package 'xl2tpd' is already installed."
+    fi
+
+    # Mengecek dan menginstal strongswan
+    if ! dpkg -l | grep -q "^ii\s*strongswan\s"; then
+        echo "Package 'strongswan' is not installed. Installing..."
+        sudo apt update
+        sudo apt install -y strongswan
+
+        if [ $? -eq 0 ]; then
+            echo "Package 'strongswan' has been successfully installed."
+        else
+            echo "Failed to install 'strongswan'. Please check for errors."
+        fi
+    else
+        echo "Package 'strongswan' is already installed."
+    fi
+
+    # Mengecek dan menginstal rsyslog
+    if ! dpkg -l | grep -q "^ii\s*rsyslog\s"; then
+        echo "Package 'rsyslog' is not installed. Installing..."
+        sudo apt update
+        sudo apt install -y rsyslog
+
+        if [ $? -eq 0 ]; then
+            echo "Package 'rsyslog' has been successfully installed."
+        else
+            echo "Failed to install 'rsyslog'. Please check for errors."
+        fi
+    else
+        echo "Package 'rsyslog' is already installed."
+    fi
+
+else
+    echo "This script is intended for Debian or Ubuntu. Detected OS: $os. Exiting."
+    exit 1
+fi
+
 
 # Remove whitespace and quotes around VPN variables, if any
 VPN_IPSEC_PSK="$(nospaces "$VPN_IPSEC_PSK")"
@@ -54,59 +122,172 @@ VPN_USER="$(noquotes "$VPN_USER")"
 VPN_PASSWORD="$(nospaces "$VPN_PASSWORD")"
 VPN_PASSWORD="$(noquotes "$VPN_PASSWORD")"
 
-if [ -z "$VPN_IPSEC_PSK" ] || [ -z "$VPN_USER" ] || [ -z "$VPN_PASSWORD" ]; then
-  exiterr "All VPN credentials must be specified. Edit your 'env' file and re-enter them."
-fi
+VPN_INTERNAL_SEGMENT="$(validate_network_segment "$VPN_INTERNAL_SEGMENT")"
 
-if printf '%s' "$VPN_IPSEC_PSK $VPN_USER $VPN_PASSWORD" | LC_ALL=C grep -q '[^ -~]\+'; then
-  exiterr "VPN credentials must not contain non-ASCII characters."
-fi
+cat > /etc/ipsec.conf <<EOF
+# ipsec.conf - strongSwan IPsec configuration file
 
-case "$VPN_IPSEC_PSK $VPN_USER $VPN_PASSWORD" in
-  *[\\\"\']*)
-    exiterr "VPN credentials must not contain these special characters: \\ \" '"
-    ;;
-esac
+conn myvpn
+  auto=add
+  keyexchange=ikev1
+  authby=secret
+  type=transport
+  left=%defaultroute
+  leftprotoport=17/1701
+  rightprotoport=17/1701
+  right=$VPN_SERVER_IP
+  ike=aes128-sha1-modp2048
+  esp=aes128-sha1
+EOF
 
-echo
-echo 'Trying to auto discover IP of this server...'
+cat > /etc/ipsec.secrets <<EOF
+: PSK "$VPN_IPSEC_PSK"
+EOF
 
-# In case auto IP discovery fails, manually define the public IP
-# of this server in your 'env' file, as variable 'VPN_SERVER_PUBLIC_IP'.
-VPN_SERVER_PUBLIC_IP=${VPN_PUBLIC_IP:-''}
-VPN_SERVER_IPV4_ROUTES=${VPN_SERVER_IPV4_ROUTES:-''}
+chmod 600 /etc/ipsec.secrets
 
-VPN_SERVER_LOCAL_SEGMENT=${VPN_LOCAL_SEGMENT:-''}
-VPN_SERVER_INTERNAL_SEGMENT=${VPN_INTERNAL_SEGMENT:-''}
+cat > /etc/xl2tpd/xl2tpd.conf <<EOF
+[lac myvpn]
+lns = $VPN_SERVER_IP
+ppp debug = yes
+pppoptfile = /etc/ppp/options.l2tpd.client
+length bit = yes
+EOF
 
-L2TP_NET=${VPN_L2TP_NET:-'192.168.42.0/24'}
-L2TP_LOCAL=${VPN_L2TP_LOCAL:-'192.168.42.1'}
-L2TP_POOL=${VPN_L2TP_POOL:-'192.168.42.10-192.168.42.250'}
-XAUTH_NET=${VPN_XAUTH_NET:-'192.168.43.0/24'}
-XAUTH_POOL=${VPN_XAUTH_POOL:-'192.168.43.10-192.168.43.250'}
-DNS_SRV1=${VPN_DNS_SRV1:-'8.8.8.8'}
-DNS_SRV2=${VPN_DNS_SRV2:-'8.8.4.4'}
-
-echo 'Membuat koneksi L2TP ...'
-
-nmcli connection add connection.id vpn-mikro con-name vpn-mikro type VPN vpn-type l2tp ifname -- connection.autoconnect yes ipv4.method auto ipv4.routes "$VPN_SERVER_IPV4_ROUTES"  vpn.data "gateway = $VPN_SERVER_PUBLIC_IP, ipsec-enabled = yes, mru = 1400, mtu = 1400, password-flags = 0, user = dnsdev" vpn.secrets "password = $VPN_PASSWORD, ipsec-psk = $VPN_IPSEC_PSK" ipv6.method disable
-
-echo 'Berhasil membuat sambungan L2TP ...'
-
-# Replace 'YourConnectionName' with the name of the connection you want to check
-connection_name="vpn-mikro"
-
-# Check if the connection is up
-if nmcli connection show --active | grep -q "$connection_name"; then
-    echo "$connection_name is up."
+if [ -d /etc/ppp ]; then
+  echo "Directory /etc/ppp exists."
 else
-    echo "$connection_name is not up."
-    echo "starting $connection_name"
-    nmcli conn up vpn-mikro
+  echo "Directory does not exist."
+  mkdir -p /etc/ppp
+  echo "create directory /etc/ppp"
 fi
 
-echo 'Sambungan vpn berhasil, berjalan di background ...'
 
-exec /bin/bash $@
+cat > /etc/ppp/options.l2tpd.client <<EOF
+ipcp-accept-local
+ipcp-accept-remote
+refuse-eap
+require-chap
+noccp
+noauth
+mtu 1280
+mru 1280
+noipdefault
+defaultroute
+usepeerdns
+connect-delay 5000
+name "$VPN_USER"
+password "$VPN_PASSWORD"
+EOF
 
-echo 'Refresh Koneksi L2TP ...'
+chmod 600 /etc/ppp/options.l2tpd.client
+
+if [ -d /var/run/xl2tpd ]; then
+  echo "Directory /var/run/xl2tpd exists."
+else
+  echo "Directory does not exist."
+  mkdir -p /var/run/xl2tpd
+  echo "create directory /var/run/xl2tpd"
+fi
+
+touch /var/run/xl2tpd/l2tp-control
+
+# Check if lsb_release command exists
+if command -v lsb_release > /dev/null 2>&1; then
+    # Get distribution name
+    distro=$(lsb_release -si)
+
+    # Check for Ubuntu
+    if [ "$distro" = "Ubuntu" ]; then
+        echo "This is Ubuntu."
+
+    # For Ubuntu 20.04, if strongswan service not found
+    ipsec restart
+
+    service xl2tpd restart
+
+    #Start the IPsec connection:
+
+    # Ubuntu and Debian
+    ipsec up myvpn
+
+    #Start the L2TP connection:
+
+    echo "c myvpn" > /var/run/xl2tpd/l2tp-control
+
+
+    # Check for Debian
+    elif [ "$distro" = "Debian" ]; then
+        echo "This is Debian."
+
+    # For Ubuntu 20.04, if strongswan service not found
+    ipsec restart
+
+    service xl2tpd restart
+
+    # Ubuntu and Debian
+    ipsec up myvpn
+
+    #Start the L2TP connection:
+
+    echo "c myvpn" > /var/run/xl2tpd/l2tp-control
+
+    # Check for CentOS
+    elif [ "$distro" = "CentOS" ]; then
+        echo "This is CentOS."
+
+    # CentOS and Fedora
+    service strongswan restart
+    service xl2tpd restart
+
+    # CentOS and Fedora
+    strongswan up myvpn
+
+    #Start the L2TP connection:
+
+    echo "c myvpn" > /var/run/xl2tpd/l2tp-control
+
+    # If none of the above
+    else
+        echo "This distribution is not Ubuntu, Debian, or CentOS."
+    fi
+
+# If lsb_release command is not available
+else
+    echo "lsb_release command not found. Unable to determine the distribution."
+fi
+
+# Define the destination network and gateway
+#destination_network="192.168.1.0/24"
+destination_network=$VPN_INTERNAL_SEGMENT
+#gateway="192.168.0.1"
+dev_gateway="ppp0"
+
+# Check if the route exists
+existing_route=$(ip route | grep -E "^$destination_network\s+via\s+$gateway")
+
+if [ -z "$existing_route" ]; then
+    echo "Route doesn't exist. Adding route..."
+#    sudo ip route add "$destination_network" via "$dev_gateway"
+    sudo ip route add "$destination_network" dev "$dev_gateway"
+    if [ $? -eq 0 ]; then
+        echo "Route added successfully."
+    else
+        echo "Failed to add route. Please check for errors."
+    fi
+else
+    echo "Route already exists."
+fi
+
+#ip route add 172.31.131.0/24 dev ppp0
+
+
+#Start the IPsec connection:
+
+# Ubuntu and Debian
+## ipsec up myvpn
+
+#Start the L2TP connection:
+
+## echo "c myvpn" > /var/run/xl2tpd/l2tp-control
+
