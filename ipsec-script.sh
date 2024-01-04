@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#export "$(grep -vE "^(#.*|\s*)$" .env)"
-
 if [ "$0" = "$BASH_SOURCE" ]; then
     echo "Skrip ini dijalankan menggunakan Bash"
 else
@@ -15,10 +13,44 @@ workingdir=$(pwd)
 if [ -f "$workingdir/$env_file" ]; then
     echo "Loading variables from $env_file..."
     source $workingdir/$env_file
-    echo "Variables loaded."
+    echo "File berhasil di baca"
+
 else
     echo "Error: $env_file not found."
 fi
+
+# Cek jika variabel tidak kosong
+if [ -n "$VPN_SERVER_IP" ]; then
+    echo "Variabel VPN_SERVER_IP tidak kosong"
+else
+    echo "Variabel VPN_SERVER_IP kosong atau tidak terdefinisi"
+    echo "Error, berhenti menjalankan script $1" >&2; exit 1
+fi
+
+# Cek jika variabel tidak kosong
+if [ -n "$VPN_USER" ]; then
+    echo "Variabel VPN_USER tidak kosong"
+else
+    echo "Variabel VPN_USER kosong atau tidak terdefinisi"
+    echo "Error, berhenti menjalankan script $1" >&2; exit 1
+fi
+
+# Cek jika variabel tidak kosong
+if [ -n "$VPN_PASSWORD" ]; then
+    echo "Variabel VPN_PASSWORD tidak kosong"
+else
+    echo "Variabel VPN_PASSWORD kosong atau tidak terdefinisi"
+    echo "Error, berhenti menjalankan script $1" >&2; exit 1
+fi
+
+# Cek jika variabel tidak kosong
+if [ -n "$VPN_IPSEC_PSK" ]; then
+    echo "Variabel VPN_IPSEC_PSK tidak kosong"
+else
+    echo "Variabel VPN_IPSEC_PSK kosong atau tidak terdefinisi"
+    echo "Error, berhenti menjalankan script $1" >&2; exit 1
+fi
+
 
 exiterr()  { echo "Error: $1" >&2; exit 1; }
 nospaces() { printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
@@ -236,11 +268,3 @@ else
     echo "lsb_release command not found. Unable to determine the distribution."
 fi
 
-#Start the IPsec connection:
-
-# Ubuntu and Debian
-## ipsec up myvpn
-
-#Start the L2TP connection:
-
-## echo "c myvpn" > /var/run/xl2tpd/l2tp-control
